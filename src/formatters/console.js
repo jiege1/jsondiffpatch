@@ -64,7 +64,12 @@ class ConsoleFormatter extends BaseFormatter {
   }
 
   formatValue(context, value) {
-    context.out(JSON.stringify(value, null, 2));
+    context.out(JSON.stringify(value, (k, v) => {
+      if (typeof v === "bigint") {
+        return `Bigint=${v.toString()}`;
+      }
+      return v;
+    }, 2));
   }
 
   formatTextDiffString(context, value) {

@@ -6,7 +6,12 @@ class HtmlFormatter extends BaseFormatter {
   }
 
   formatValue(context, value) {
-    context.out(`<pre>${htmlEscape(JSON.stringify(value, null, 2))}</pre>`);
+    context.out(`<pre>${htmlEscape(JSON.stringify(value, (k, v) => {
+      if (typeof v === 'bigint') {
+        return `Bigint=${v.toString()}`;
+      }
+      return v;
+    }, 2))}</pre>`);
   }
 
   formatTextDiffString(context, value) {
@@ -60,12 +65,22 @@ class HtmlFormatter extends BaseFormatter {
   }
 
   nodeBegin(context, key, leftKey, type, nodeType) {
+    // eslint-disable-next-line no-unused-vars
+    let newLeftKey = leftKey;
+    if (
+      this.translationConfigMap &&
+      // eslint-disable-next-line max-len
+      Object.prototype.toString.call(this.translationConfigMap) === '[object Object]'
+    ) {
+      newLeftKey = this.translationConfigMap[leftKey] || leftKey;
+    }
+
     let nodeClass = `jsondiffpatch-${type}${
       nodeType ? ` jsondiffpatch-child-node-type-${nodeType}` : ''
     }`;
     context.out(
       `<li class="${nodeClass}" data-key="${leftKey}">` +
-        `<div class="jsondiffpatch-property-name">${leftKey}</div>`
+        `<div class="jsondiffpatch-property-name">${newLeftKey}</div>`
     );
   }
 
@@ -166,6 +181,17 @@ class HtmlFormatter extends BaseFormatter {
 
 function htmlEscape(text) {
   let html = text;
+
+  // TODO: 处理bigint
+  const bigints = html.match(/"Bigint=.*?"/g);
+  if (bigints && bigints.length) {
+    for (let i = 0; i < bigints.length; i++) {
+      const bi = bigints[i];
+      const bi1 = bi.replace(`"Bigint=`, '').replace(`"`, '');
+      html = html.split(bi).join(bi1);
+    }
+  }
+
   let replacements = [
     [/&/g, '&amp;'],
     [/</g, '&lt;'],
@@ -292,9 +318,9 @@ export default HtmlFormatter;
 
 let defaultInstance;
 
-export function format(delta, left) {
+export function format(delta, left, translationConfigMap) {
   if (!defaultInstance) {
     defaultInstance = new HtmlFormatter();
   }
-  return defaultInstance.format(delta, left);
+  return defaultInstance.format(delta, left, translationConfigMap);
 }

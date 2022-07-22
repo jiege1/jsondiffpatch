@@ -181,7 +181,12 @@ const formatAnyChange = function(context, delta) {
   const htmlNote =
     annotator &&
     annotator.apply(annotator, Array.prototype.slice.call(arguments, 1));
-  let json = JSON.stringify(delta, null, 2);
+  let json = JSON.stringify(delta, (k, v) => {
+    if (typeof v === 'bigint') {
+      return `Bigint=${v.toString()}`;
+    }
+    return v;
+  }, 2);
   if (deltaType === 'textdiff') {
     // split text diffs lines
     json = json.split('\\n').join('\\n"+\n   "');

@@ -37,8 +37,10 @@ const arrayKeyComparer = (key1, key2) =>
   arrayKeyToSortNumber(key1) - arrayKeyToSortNumber(key2);
 
 class BaseFormatter {
-  format(delta, left) {
+  format(delta, left, translationConfigMap) {
     const context = {};
+    this.translationConfigMap = translationConfigMap;
+
     this.prepareContext(context);
     this.recurse(context, delta, left);
     return this.finalize(context);
@@ -134,17 +136,21 @@ class BaseFormatter {
   }
 
   forEachDeltaKey(delta, left, fn) {
-    const keys = getObjectKeys(delta);
+    let keys = getObjectKeys(delta);
     const arrayKeys = delta._t === 'a';
     const moveDestinations = {};
     let name;
     if (typeof left !== 'undefined') {
       for (name in left) {
         if (Object.prototype.hasOwnProperty.call(left, name)) {
-          if (
-            typeof delta[name] === 'undefined' &&
-            (!arrayKeys || typeof delta[`_${name}`] === 'undefined')
-          ) {
+          if (keys.includes(name)) {
+            keys = keys.filter(item => item !== name);
+          }
+          if ((!arrayKeys || typeof delta['_' + name] === 'undefined')) {
+          // if (
+          //   typeof delta[name] === 'undefined' &&
+          //   (!arrayKeys || typeof delta[`_${name}`] === 'undefined')
+          // ) {
             keys.push(name);
           }
         }
@@ -172,9 +178,10 @@ class BaseFormatter {
     }
     if (arrayKeys) {
       keys.sort(arrayKeyComparer);
-    } else {
-      keys.sort();
     }
+    // else {
+    //   keys.sort();
+    // }
     for (let index = 0, length = keys.length; index < length; index++) {
       const key = keys[index];
       if (arrayKeys && key === '_t') {

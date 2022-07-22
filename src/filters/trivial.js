@@ -33,7 +33,7 @@ export const diffFilter = function trivialMatchesDiffFilter(context) {
     context.setResult([context.left, context.right]).exit();
     return;
   }
-  if (context.leftType === 'boolean' || context.leftType === 'number') {
+  if (context.leftType === 'boolean' || context.leftType === 'number' || context.leftType === 'bigint') {
     context.setResult([context.left, context.right]).exit();
     return;
   }
